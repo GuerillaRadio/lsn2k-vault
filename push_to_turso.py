@@ -29,14 +29,8 @@ def run_sql(sql: str, args: list = None):
 def make_arg(v):
     if v is None:
         return {"type": "null"}
-    if isinstance(v, bool):
-        return {"type": "integer", "value": str(int(v))}
-    if isinstance(v, int):
-        return {"type": "integer", "value": str(v)}
-    if isinstance(v, float):
-        return {"type": "float", "value": str(v)}
-    s = str(v)
-    return {"type": "text", "value": s}
+    # Send everything as text — SQLite/libSQL handles type coercion
+    return {"type": "text", "value": str(v)}
 
 def run_many(sql: str, rows: list, batch_size: int = 25):
     for i in range(0, len(rows), batch_size):
