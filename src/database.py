@@ -25,6 +25,102 @@ def get_conn():
         return conn
 
 
+class TursoHTTPConn:
+    """Minimal sqlite3-compatible wrapper using Turso HTTP API."""
+    import requests as _requests
+
+    def __init__(self, url, token):
+        self._url = url.replace("libsql://", "https://")
+        self._headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+    def _exec(self, sql, params=None):
+        import requests
+        if params:
+            # Simple param substitution
+            for p in params:
+                if p is None:
+                    sql = sql.replace("?", "NULL", 1)
+                elif isinstance(p, str):
+                    sql = sql.replace("?", "'" + p.replace("'", "''") + "'", 1)
+                else:
+                    sql = sql.replace("?", str(p), 1)
+        payload = {"requests": [{"type": "execute", "stmt": {"sql": sql}}, {"type": "close"}]}
+        resp = requests.post(f"{self._url}/v2/pipeline", headers=self._headers, json=payload, timeout=30)
+        resp.raise_for_status()
+        return resp.json()["results"][0]["response"]["result"]
+
+    def execute(self, sql, params=None):
+        result = self._exec(sql, params)
+        return TursoHTTPCursor(result)
+
+    def executemany(self, sql, params_list):
+        for params in params_list:
+            self._exec(sql, params)
+        return self
+
+    def executescript(self, script):
+        for stmt in script.split(";"):
+            stmt = stmt.strip()
+            if stmt:
+                try:
+                    self._exec(stmt)
+                except:
+                    pass
+        return self
+
+    def commit(self):
+        pass
+
+    def close(self):
+        pass
+
+    @property
+    def row_factory(self):
+        return sqlite3.Row
+
+    @row_factory.setter
+    def row_factory(self, v):
+        pass
+
+
+class TursoHTTPCursor:
+    def __init__(self, result):
+        self._result = result
+        self._rows = result.get("rows", [])
+        self._cols = [c["name"] for c in result.get("columns", [])]
+        self._idx = 0
+
+    def fetchone(self):
+        if self._idx >= len(self._rows):
+            return None
+        row = self._make_row(self._rows[self._idx])
+        self._idx += 1
+        return row
+
+    def fetchall(self):
+        return [self._make_row(r) for r in self._rows]
+
+    def _make_row(self, raw_row):
+        values = [c.get("value") if c.get("type") != "null" else None for c in raw_row]
+        return sqlite3.Row.__new__(sqlite3.Row)  # Can't easily subclass; use dict
+        # Fall back to plain tuple with dict-like access
+        return _DictRow(dict(zip(self._cols, values)))
+
+    def __iter__(self):
+        return iter(self.fetchall())
+
+    @property
+    def description(self):
+        return [(c, None, None, None, None, None, None) for c in self._cols]
+
+
+class _DictRow(dict):
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return list(self.values())[key]
+        return super().__getitem__(key)
+
+
 def init_db():
     conn = get_conn()
     conn.executescript("""
