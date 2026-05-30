@@ -5,14 +5,13 @@ import sqlite3
 from pathlib import Path
 from config import DB_PATH
 
-TURSO_URL   = os.getenv("TURSO_URL")
-TURSO_TOKEN = os.getenv("TURSO_TOKEN")
-
-
 def get_conn():
     """Return a database connection — Turso HTTP in production, local SQLite in dev."""
-    if TURSO_URL and TURSO_TOKEN:
-        return TursoHTTPConn(TURSO_URL, TURSO_TOKEN)
+    turso_url   = os.getenv("TURSO_URL")
+    turso_token = os.getenv("TURSO_TOKEN")
+
+    if turso_url and turso_token:
+        return TursoHTTPConn(turso_url, turso_token)
     else:
         Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(DB_PATH)

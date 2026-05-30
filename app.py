@@ -86,6 +86,20 @@ def rate():
     return jsonify({"ok": True})
 
 
+@app.route("/health")
+def health():
+    import os
+    turso_url = os.getenv("TURSO_URL", "NOT SET")
+    turso_token = os.getenv("TURSO_TOKEN", "NOT SET")
+    try:
+        from database import get_conn
+        conn = get_conn()
+        count = conn.execute("SELECT COUNT(*) FROM leagues").fetchone()[0]
+        return jsonify({"status": "ok", "leagues": count, "turso_url": turso_url[:30], "token_set": turso_token != "NOT SET"})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e), "turso_url": turso_url[:30], "token_set": turso_token != "NOT SET"})
+
+
 @app.route("/reset", methods=["POST"])
 def reset():
     session["messages"] = []
