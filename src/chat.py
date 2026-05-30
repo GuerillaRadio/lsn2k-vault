@@ -212,7 +212,7 @@ def _cache_key(question: str) -> str:
     return hashlib.sha256(question.strip().lower().encode()).hexdigest()[:16]
 
 def get_cached(question: str) -> str | None:
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_conn()
     try:
         row = conn.execute(
             "SELECT answer FROM response_cache WHERE question_hash=?",
@@ -230,7 +230,7 @@ def get_cached(question: str) -> str | None:
         conn.close()
 
 def save_cache(question: str, answer: str):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_conn()
     try:
         conn.execute(
             "INSERT OR REPLACE INTO response_cache (question_hash, question, answer) VALUES (?,?,?)",
