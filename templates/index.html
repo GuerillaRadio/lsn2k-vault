@@ -221,13 +221,8 @@
     .suggestion:hover{background:#221010;border-left-color:var(--crimson-hi);color:#fff;}
 
     .suggestion .cat{
-
-      font-family:"Oswald",sans-serif;font-size:.63rem;font-weight:600;
-
-      letter-spacing:1.5px;color:var(--pink);text-transform:uppercase;
-
-      flex-shrink:0;width:54px;
-
+      font-size:1.1rem;flex-shrink:0;line-height:1;
+      display:flex;align-items:center;justify-content:center;
     }
 
     .suggestion .label{white-space:nowrap;flex:1;}
@@ -554,7 +549,10 @@
       
       .suggestions-recent .suggestion-recent:nth-child(n+3){ display:none; }
       .suggestion{ padding:10px 12px;font-size:.82rem; }
-      .suggestion .cat{ width:46px;font-size:.58rem; }
+      .suggestion .cat{
+      font-size:1.1rem;flex-shrink:0;line-height:1;
+      display:flex;align-items:center;justify-content:center;
+    }
 
       #chat-wrap{ padding:16px 0 4px;gap:16px; }
       .msg{ padding:0 12px;gap:8px; }

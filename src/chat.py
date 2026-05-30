@@ -19,7 +19,7 @@ if not _api_key:
             break
 
 client = anthropic.Anthropic(api_key=_api_key)
-MODEL = "claude-haiku-4-5"
+MODEL = "claude-sonnet-4-6"
 
 SYSTEM_PROMPT = """You are Steve Taylor — also known as Coach Taylor — the official analyst and historian of the LSN2K fantasy football league, est. 2000. You've watched this league for over two decades and know every manager, every trade, every heartbreak, and every championship.
 
@@ -189,8 +189,11 @@ Only go to the raw tables (matchups, roster_slots, etc.) for questions about spe
   league_key, position, count, position_type
 
 **transactions** — every add, drop, trade, waiver claim
-  transaction_key (PK), league_key, season, type, status, timestamp,
-  faab_bid, trader_team_key, tradee_team_key
+  transaction_key (PK), league_key, season, type (add/drop/trade/commissioner),
+  status (successful = completed), timestamp, faab_bid, trader_team_key, tradee_team_key
+  NOTE: There are 253 successful trades in this league's history. To find trades:
+  WHERE type='trade' AND status='successful'
+  Join transaction_players to see which players were exchanged.
 
 **transaction_players** — players in each transaction
   id, transaction_key, player_key, player_name, position, nfl_team,
@@ -227,11 +230,13 @@ Only go to the raw tables (matchups, roster_slots, etc.) for questions about spe
 - Keep responses short. If it's getting long, stop and offer to dig deeper.
 
 **ABSOLUTELY FORBIDDEN — zero tolerance:**
-- NEVER say: "Let me check", "Looking at the data", "I'll query", "Let me try", "Based on the data", "According to the records", "I found", "The database shows", "Let me look", "Something's not right", "Let me query this", "Let me fix", "Let me approach", "That's not quite right", or ANY similar phrase.
-- NEVER mention SQL, tables, joins, queries, databases, records, or data in your response.
-- NEVER narrate what you are doing or fixing. The user does not care. They want the answer.
-- NEVER acknowledge errors, retries, or corrections. If a query fails, fix it silently and answer.
-- Start your response with the answer. Not with what you're about to do.
+- NEVER mention SQL, tables, joins, queries, databases, schemas, or anything technical.
+- NEVER say things like: "Let me check the database", "Let me query", "Let me look at the table", "Let me check the league_lore table", "Let me check the transaction structure", "Let me pull the data", "Let me look at the schema" — these are all forbidden.
+- You MAY use brief, natural, coach-like progress notes ONLY when doing a complex multi-step answer — but keep them colloquial. Say things like "Digging through the trade history..." or "Checking the record books..." NOT technical descriptions of what you're doing.
+- NEVER acknowledge errors, retries, or dead ends. Fix silently.
+- NEVER, EVER make up or hallucinate data. If a query returns no results, run a different query — do NOT invent player names, trade details, scores, or stories. Every fact must come from a query result.
+- If you genuinely cannot find the data after multiple attempts, say "I couldn't find that in the records" — do NOT fabricate an answer.
+- NEVER start a response with what you're about to do. Lead with the answer or a punchy setup line.
 
 **Tone:**
 - Coach Taylor is a high school athletic trainer who absolutely thinks he runs the place
@@ -391,6 +396,24 @@ def chat_stream(messages: list[dict], original_question: str = ""):
 
             final = stream.get_final_message()
             stop_reason = final.stop_reason
+
+            # Log token usage
+            try:
+                u = final.usage
+                inp = getattr(u, 'input_tokens', 0) or 0
+                out = getattr(u, 'output_tokens', 0) or 0
+                cache = getattr(u, 'cache_read_input_tokens', 0) or 0
+                # Sonnet pricing
+                cost = (inp * 3.0 + out * 15.0 + cache * 0.3) / 1_000_000
+                from database import get_conn as _gc
+                _c = _gc()
+                _c.execute("CREATE TABLE IF NOT EXISTS usage_log (id INTEGER PRIMARY KEY AUTOINCREMENT, model TEXT, input_tokens INTEGER, output_tokens INTEGER, cache_read_tokens INTEGER, cost_usd REAL, asked_at INTEGER DEFAULT (strftime('%s','now')))")
+                _c.execute("INSERT INTO usage_log (model,input_tokens,output_tokens,cache_read_tokens,cost_usd) VALUES (?,?,?,?,?)",
+                           (MODEL, inp, out, cache, round(cost, 6)))
+                _c.commit()
+                _c.close()
+            except Exception:
+                pass
 
         if stop_reason != "tool_use":
             # Done — save text and thinking for history
