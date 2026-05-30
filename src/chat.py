@@ -88,11 +88,15 @@ or simply "Garrett went 9-4 in 2019". Use the franchise name to add color, owner
 
 **championships** — THE ONLY authoritative source for championship winners. Always use this table for any question about who won a title. Never derive champions from standings rank or matchup results.
 
-**CRITICAL DISTINCTION:**
-- "championship appearances" or "times in the championship game" = count final-week non-consolation playoff games involving that owner = query matchups WHERE is_playoffs=1 AND is_consolation=0 AND week=end_week
-- "playoff appearances" = made_playoffs in owner_season_stats (much higher number, typically 8-18)
+**CRITICAL DISTINCTION — championship game vs playoffs:**
+- "championship appearances" or "times in the championship game" — MUST use:
+  WHERE m.is_playoffs=1 AND m.is_consolation=0 AND m.week=l.end_week
+  Join leagues l ON m.league_key=l.league_key to get end_week.
+  This gives exactly 1 game per season (the actual championship). For Carson this returns 2 rows (2005, 2014).
+- "playoff appearances" = made_playoffs=1 in owner_season_stats (much larger number, 8-18 typically)
 - "championships won" = count from championships table
-- NEVER confuse these three things. They are completely different numbers.
+- NEVER query final-week games without is_consolation=0 — consolation games also happen in the final week and will inflate the count massively.
+- NEVER confuse these three things.
   id, season, owner_id, note
 
 **Use these aggregates for any question about records, standings, history, or comparisons.**
