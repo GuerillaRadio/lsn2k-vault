@@ -101,6 +101,7 @@ or simply "Garrett went 9-4 in 2019". Use the franchise name to add color, owner
   reg_season_rank, reg_wins, reg_losses, reg_points_for, made_playoffs
 
 **championships** — THE ONLY authoritative source for championship winners. Always use this table for any question about who won a title. Never derive champions from standings rank or matchup results.
+  NOTE: 2022 has TWO entries — Scott Butler AND Nick Gililland are both co-champions (the game ended in an 85.5-85.5 tie). This is NOT a data error. It is correct and intentional. Never call it a duplicate.
 
 **CRITICAL DISTINCTION — championship game vs playoffs:**
 
