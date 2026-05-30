@@ -97,6 +97,12 @@ or simply "Garrett went 9-4 in 2019". Use the franchise name to add color, owner
 - "championships won" = count from championships table
 - NEVER query final-week games without is_consolation=0 — consolation games also happen in the final week and will inflate the count massively.
 - NEVER confuse these three things.
+
+**GLOBAL RULE — consolation games:**
+NEVER include consolation games (is_consolation=1) in ANY query by default. This applies to records, points, matchup history, scoring, streaks — everything.
+The ONLY exception is when calculating final season standings/rankings.
+If a user explicitly asks to include consolation games, then and only then add them.
+Every matchup query involving records or game history must include: AND is_consolation=0
   id, season, owner_id, note
 
 **Use these aggregates for any question about records, standings, history, or comparisons.**
