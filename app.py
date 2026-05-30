@@ -334,19 +334,21 @@ def costs():
             FROM usage_log GROUP BY model ORDER BY total_cost DESC
         """).fetchall()
 
-        total = sum(r["total_cost"] or 0 for r in rows)
+        total = sum(float(r["total_cost"] or 0) for r in rows)
         recent = conn.execute("""
             SELECT DATE(asked_at,'unixepoch') as day, SUM(cost_usd) as daily
             FROM usage_log GROUP BY day ORDER BY day DESC LIMIT 14
         """).fetchall()
 
+        def iv(x): return int(x) if x is not None else 0
+        def fv(x): return float(x) if x is not None else 0.0
         rows_html = "".join(f"""<tr>
-            <td>{r['model']}</td><td>{r['calls']:,}</td>
-            <td>{(r['tin'] or 0):,}</td><td>{(r['tout'] or 0):,}</td>
-            <td>${(r['total_cost'] or 0):.4f}</td>
+            <td>{r['model']}</td><td>{iv(r['calls']):,}</td>
+            <td>{iv(r['tin']):,}</td><td>{iv(r['tout']):,}</td>
+            <td>${fv(r['total_cost']):.4f}</td>
         </tr>""" for r in rows)
 
-        daily_html = "".join(f"<tr><td>{r['day']}</td><td>${(r['daily'] or 0):.4f}</td></tr>" for r in recent)
+        daily_html = "".join(f"<tr><td>{r['day']}</td><td>${float(r['daily'] or 0):.4f}</td></tr>" for r in recent)
 
         html = f"""<!DOCTYPE html><html><head><title>Cost Monitor</title>
         <style>body{{font-family:sans-serif;background:#0a0a0a;color:#eee;max-width:800px;margin:40px auto;padding:20px}}
