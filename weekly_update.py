@@ -48,6 +48,8 @@ print("Rebuilding aggregates...")
 import subprocess
 subprocess.run([sys.executable, str(Path(__file__).parent / "build_aggregates.py")])
 subprocess.run([sys.executable, str(Path(__file__).parent / "build_final_standings.py")])
+subprocess.run([sys.executable, str(Path(__file__).parent / "rebuild_trade_summary.py")])
+subprocess.run([sys.executable, str(Path(__file__).parent / "build_all_analytics.py")])
 
 # Push to Turso
 print("Syncing to Turso...")

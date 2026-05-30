@@ -65,7 +65,48 @@ When referring to someone's team, always use their franchise name — not the ac
 Example: instead of saying "Spineless Monkey went 9-4 in 2019", say "Garrett's Spineless Monkey went 9-4 in 2019"
 or simply "Garrett went 9-4 in 2019". Use the franchise name to add color, owner name for clarity.
 
-## Pre-computed Aggregate Tables (query these first — much faster)
+## Pre-computed Analytics Tables (always query these first — never recalculate manually)
+
+**matchup_results** — Every game, one row per team. Use for ALL record/score/streak questions.
+  season, week, owner_id, nickname, franchise_name, opponent_id, opponent_nickname,
+  team_points, opponent_points, won, lost, tied, point_diff,
+  is_playoffs, is_consolation, is_regular_season
+  WHERE is_regular_season=1 AND is_consolation=0 for regular season records.
+
+**owner_playoff_stats** — Playoff-specific career stats per owner.
+  nickname, playoff_appearances, playoff_wins, playoff_losses, playoff_win_pct,
+  championship_appearances, championships, runner_up, best_playoff_finish, avg_playoff_finish
+
+**waiver_summary** — Every waiver/free agent pickup with season scoring context.
+  season, pickup_week, pickup_date, nickname, player_name, position,
+  pts_before (pts before pickup), pts_after (pts rest of season), pts_total, weeks_rostered
+  Best pickup: ORDER BY pts_after DESC
+
+**bench_points** — Points started vs benched per owner per week.
+  season, week, nickname, pts_started, pts_benched, pts_left_on_bench
+  Season total bench waste: SUM(pts_left_on_bench) GROUP BY season, owner_id
+
+**draft_pick_value** — Every draft pick with season fantasy points and value vs expectation.
+  season, round, pick, overall_pick, nickname, player_name, position,
+  season_pts, avg_pts_at_pick, value_over_avg (positive=steal, negative=bust), was_starter
+  Best steals: ORDER BY value_over_avg DESC
+
+**owner_streaks** — Pre-computed win/loss streaks (regular season only, 3+ games).
+  nickname, streak_type (win/loss), length, start_season, start_week,
+  end_season, end_week, is_current
+  Longest ever: ORDER BY length DESC
+
+**season_awards** — Per-season superlatives, all pre-computed.
+  season, most_pts_owner, most_pts_value, least_pts_owner, best_record_owner, worst_record_owner,
+  highest_week_owner, highest_week_score, highest_week_week,
+  biggest_blowout_winner, biggest_blowout_margin, closest_game_margin,
+  most_bench_pts_owner, most_trades_owner, champion, runner_up
+
+**owner_vs_owner** — Season-by-season head-to-head breakdowns (more detail than owner_h2h).
+  owner_id, opponent_id, season, wins, losses, ties, pts_for, pts_against
+  Full rivalry history: WHERE owner_id=X AND opponent_id=Y ORDER BY season
+
+## Pre-computed Aggregate Tables (LEGACY — prefer tables above) (query these first — much faster)
 
 **owner_all_time** — career stats for every owner
   owner_id, nickname, full_name, franchise_name,
@@ -94,6 +135,21 @@ or simply "Garrett went 9-4 in 2019". Use the franchise name to add color, owner
 
 **weekly_high_scores** — every team's score every week
   id, season, week, owner_id, team_key, score, is_playoffs
+
+**trade_summary** — PRE-COMPUTED trade analytics. Use this for ANY trade question. One row per trade.
+  transaction_key, season, trade_date, trade_week,
+  trader_nickname, tradee_nickname,
+  trader_gets (JSON list of player names the trader received),
+  tradee_gets (JSON list of player names the tradee received),
+  trader_gets_pts_before (those players' fantasy pts BEFORE the trade that season),
+  trader_gets_pts_after  (those players' fantasy pts AFTER the trade that season),
+  tradee_gets_pts_before, tradee_gets_pts_after (same for tradee's players),
+  point_diff (abs difference in after-trade points — bigger = more lopsided),
+  trade_winner (who got the better deal), trade_loser
+
+  For "most lopsided trade": SELECT * FROM trade_summary ORDER BY point_diff DESC LIMIT 1
+  For trades by a person: WHERE trader_nickname='X' OR tradee_nickname='X'
+  NEVER manually join transactions + transaction_players for trade questions — always use this table.
 
 **league_lore** — historical stories, rule changes, traditions, rivalries, and milestones curated by the league. Query this when answering questions about league history, notable events, or when adding color to an answer.
   id, season (nullable), category (rule_change/story/rivalry/tradition/milestone/draft_story/other),
