@@ -10,12 +10,9 @@ TURSO_TOKEN = os.getenv("TURSO_TOKEN")
 
 
 def get_conn():
-    """Return a database connection — Turso in production, local SQLite in dev."""
+    """Return a database connection — Turso HTTP in production, local SQLite in dev."""
     if TURSO_URL and TURSO_TOKEN:
-        import libsql_experimental as libsql
-        conn = libsql.connect(TURSO_URL, auth_token=TURSO_TOKEN)
-        conn.row_factory = sqlite3.Row
-        return conn
+        return TursoHTTPConn(TURSO_URL, TURSO_TOKEN)
     else:
         Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(DB_PATH)
@@ -25,86 +22,42 @@ def get_conn():
         return conn
 
 
-class TursoHTTPConn:
-    """Minimal sqlite3-compatible wrapper using Turso HTTP API."""
-    import requests as _requests
+class _Row(dict):
+    """sqlite3.Row-compatible dict that supports both name and index access."""
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return list(self.values())[key]
+        return super().__getitem__(key)
 
-    def __init__(self, url, token):
-        self._url = url.replace("libsql://", "https://")
-        self._headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-
-    def _exec(self, sql, params=None):
-        import requests
-        if params:
-            # Simple param substitution
-            for p in params:
-                if p is None:
-                    sql = sql.replace("?", "NULL", 1)
-                elif isinstance(p, str):
-                    sql = sql.replace("?", "'" + p.replace("'", "''") + "'", 1)
-                else:
-                    sql = sql.replace("?", str(p), 1)
-        payload = {"requests": [{"type": "execute", "stmt": {"sql": sql}}, {"type": "close"}]}
-        resp = requests.post(f"{self._url}/v2/pipeline", headers=self._headers, json=payload, timeout=30)
-        resp.raise_for_status()
-        return resp.json()["results"][0]["response"]["result"]
-
-    def execute(self, sql, params=None):
-        result = self._exec(sql, params)
-        return TursoHTTPCursor(result)
-
-    def executemany(self, sql, params_list):
-        for params in params_list:
-            self._exec(sql, params)
-        return self
-
-    def executescript(self, script):
-        for stmt in script.split(";"):
-            stmt = stmt.strip()
-            if stmt:
-                try:
-                    self._exec(stmt)
-                except:
-                    pass
-        return self
-
-    def commit(self):
-        pass
-
-    def close(self):
-        pass
-
-    @property
-    def row_factory(self):
-        return sqlite3.Row
-
-    @row_factory.setter
-    def row_factory(self, v):
-        pass
+    def keys(self):
+        return list(super().keys())
 
 
 class TursoHTTPCursor:
     def __init__(self, result):
-        self._result = result
+        cols_raw = result.get("cols", result.get("columns", []))
+        self._cols = [c.get("name", c) if isinstance(c, dict) else c for c in cols_raw]
         self._rows = result.get("rows", [])
-        self._cols = [c["name"] for c in result.get("columns", [])]
         self._idx = 0
+
+    def _parse_row(self, raw):
+        values = []
+        for cell in raw:
+            if isinstance(cell, dict):
+                values.append(None if cell.get("type") == "null" else cell.get("value"))
+            else:
+                values.append(cell)
+        return _Row(zip(self._cols, values))
 
     def fetchone(self):
         if self._idx >= len(self._rows):
             return None
-        row = self._make_row(self._rows[self._idx])
+        row = self._parse_row(self._rows[self._idx])
         self._idx += 1
         return row
 
     def fetchall(self):
-        return [self._make_row(r) for r in self._rows]
-
-    def _make_row(self, raw_row):
-        values = [c.get("value") if c.get("type") != "null" else None for c in raw_row]
-        return sqlite3.Row.__new__(sqlite3.Row)  # Can't easily subclass; use dict
-        # Fall back to plain tuple with dict-like access
-        return _DictRow(dict(zip(self._cols, values)))
+        return [self._parse_row(r) for r in self._rows[self._idx:]]
 
     def __iter__(self):
         return iter(self.fetchall())
@@ -114,11 +67,62 @@ class TursoHTTPCursor:
         return [(c, None, None, None, None, None, None) for c in self._cols]
 
 
-class _DictRow(dict):
-    def __getitem__(self, key):
-        if isinstance(key, int):
-            return list(self.values())[key]
-        return super().__getitem__(key)
+class TursoHTTPConn:
+    """sqlite3-compatible Turso connection using the HTTP pipeline API."""
+
+    def __init__(self, url, token):
+        import requests
+        self._url = url.replace("libsql://", "https://")
+        self._session = requests.Session()
+        self._session.headers.update({
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        })
+
+    def _run(self, sql, params=None):
+        if params:
+            for p in params:
+                if p is None:
+                    sql = sql.replace("?", "NULL", 1)
+                elif isinstance(p, str):
+                    sql = sql.replace("?", "'" + p.replace("'", "''") + "'", 1)
+                else:
+                    sql = sql.replace("?", str(p), 1)
+        payload = {"requests": [{"type": "execute", "stmt": {"sql": sql}}, {"type": "close"}]}
+        resp = self._session.post(f"{self._url}/v2/pipeline", json=payload, timeout=30)
+        resp.raise_for_status()
+        result = resp.json()
+        return result["results"][0]["response"]["result"]
+
+    def execute(self, sql, params=None):
+        return TursoHTTPCursor(self._run(sql, params))
+
+    def executemany(self, sql, params_list):
+        for params in params_list:
+            self._run(sql, params)
+
+    def executescript(self, script):
+        for stmt in script.split(";"):
+            stmt = stmt.strip()
+            if stmt:
+                try:
+                    self._run(stmt)
+                except Exception:
+                    pass
+
+    def commit(self):
+        pass
+
+    def close(self):
+        pass
+
+    @property
+    def row_factory(self):
+        return None
+
+    @row_factory.setter
+    def row_factory(self, v):
+        pass
 
 
 def init_db():
