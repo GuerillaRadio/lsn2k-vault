@@ -590,6 +590,16 @@
     .nameplate.user-nameplate{color:var(--muted);}
 
     .bubble table strong{ color:var(--text);font-weight:700; }
+
+    .bubble table{ max-width:100%;overflow-x:auto;display:block; }
+    .bubble table thead,.bubble table tbody,.bubble table tr{ display:table;width:100%;table-layout:fixed; }
+
+    @media(max-width:640px){
+      #input-area{ position:sticky;bottom:0;z-index:100; }
+      #user-input{ font-size:16px !important; }
+      #input-row{ flex-wrap:nowrap;align-items:flex-end; }
+      #send-btn{ flex-shrink:0;min-width:42px; }
+    }
   </style>
 
 </head>
