@@ -183,6 +183,92 @@ def health():
         return jsonify({"status": "error", "error": str(e), "turso_url": turso_url[:30], "token_set": turso_token != "NOT SET"})
 
 
+@app.route("/lore", methods=["GET", "POST"])
+def lore_admin():
+    from database import get_conn
+    conn = get_conn()
+    msg = ""
+
+    if request.method == "POST":
+        data = request.form
+        try:
+            conn.execute(
+                "INSERT INTO league_lore (season, category, title, content, tags) VALUES (?,?,?,?,?)",
+                (
+                    int(data["season"]) if data.get("season") else None,
+                    data["category"],
+                    data["title"],
+                    data["content"],
+                    data.get("tags", ""),
+                )
+            )
+            conn.commit()
+            msg = "Entry saved!"
+        except Exception as e:
+            msg = f"Error: {e}"
+
+    rows = conn.execute(
+        "SELECT id, season, category, title, content, tags FROM league_lore ORDER BY season DESC, id DESC"
+    ).fetchall()
+    conn.close()
+
+    CATEGORIES = ["rule_change", "story", "rivalry", "tradition", "milestone", "roster_move", "draft_story", "other"]
+
+    html = f"""<!DOCTYPE html><html><head><title>League Lore Admin</title>
+    <style>
+      body{{font-family:'Segoe UI',sans-serif;background:#0a0a0a;color:#eee;max-width:900px;margin:40px auto;padding:20px}}
+      h1{{color:#7d0a1c;margin-bottom:4px}} h2{{color:#d4a94f;margin:24px 0 12px}}
+      form{{background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:20px;margin-bottom:32px}}
+      label{{display:block;font-size:.8rem;color:#888;margin-bottom:4px;margin-top:12px}}
+      input,select,textarea{{width:100%;background:#111;border:1px solid #333;color:#eee;padding:8px 10px;border-radius:5px;font-size:.9rem;box-sizing:border-box}}
+      textarea{{height:120px;resize:vertical;font-family:inherit}}
+      input:focus,select:focus,textarea:focus{{outline:none;border-color:#7d0a1c}}
+      button{{margin-top:16px;background:#7d0a1c;color:#fff;border:none;padding:10px 24px;border-radius:5px;cursor:pointer;font-size:.9rem;font-weight:600}}
+      button:hover{{background:#a01428}}
+      .msg{{color:#4caf50;margin-bottom:16px;font-weight:600}}
+      .entry{{background:#1a1a1a;border:1px solid #262626;border-radius:6px;padding:14px;margin-bottom:10px}}
+      .entry-title{{color:#d4a94f;font-weight:600;margin-bottom:4px}}
+      .entry-meta{{font-size:.75rem;color:#555;margin-bottom:6px}}
+      .entry-content{{font-size:.88rem;color:#aaa;line-height:1.5}}
+      .cat{{display:inline-block;background:#7d0a1c;color:#fff;font-size:.65rem;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px;margin-right:6px}}
+    </style></head><body>
+    <h1>League Lore</h1>
+    <p style="color:#555;font-size:.85rem">Stories, rule changes, traditions — Coach Taylor queries this to add color to answers.</p>
+    {"<div class='msg'>" + msg + "</div>" if msg else ""}
+    <h2>Add Entry</h2>
+    <form method="POST">
+      <label>Season (leave blank if not season-specific)</label>
+      <input type="number" name="season" placeholder="e.g. 2015" min="2004" max="2030">
+      <label>Category</label>
+      <select name="category">{"".join(f'<option value="{c}">{c}</option>' for c in CATEGORIES)}</select>
+      <label>Title (short label)</label>
+      <input type="text" name="title" placeholder="e.g. Switch to Auction Draft" required>
+      <label>Content (the full story or fact)</label>
+      <textarea name="content" placeholder="Write the full story here..." required></textarea>
+      <label>Tags (comma-separated owner nicknames or keywords)</label>
+      <input type="text" name="tags" placeholder="e.g. Falk, Scott, draft, 2015">
+      <button type="submit">Save Entry</button>
+    </form>
+    <h2>All Entries ({len(rows)})</h2>
+    {"".join(f'''<div class="entry">
+      <div class="entry-title"><span class="cat">{r["category"]}</span>{r["title"]} {"(" + str(r["season"]) + ")" if r["season"] else ""}</div>
+      <div class="entry-meta">id:{r["id"]} | tags: {r["tags"] or "none"}</div>
+      <div class="entry-content">{r["content"][:300]}{"..." if len(r["content"]) > 300 else ""}</div>
+    </div>''' for r in rows) if rows else "<p style='color:#555'>No entries yet.</p>"}
+    </body></html>"""
+    return html
+
+
+@app.route("/lore/delete/<int:lore_id>", methods=["POST"])
+def lore_delete(lore_id):
+    from database import get_conn
+    conn = get_conn()
+    conn.execute("DELETE FROM league_lore WHERE id=?", (lore_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+
 @app.route("/reset", methods=["POST"])
 def reset():
     session["messages"] = []

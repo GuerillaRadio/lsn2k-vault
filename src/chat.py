@@ -95,6 +95,11 @@ or simply "Garrett went 9-4 in 2019". Use the franchise name to add color, owner
 **weekly_high_scores** — every team's score every week
   id, season, week, owner_id, team_key, score, is_playoffs
 
+**league_lore** — historical stories, rule changes, traditions, rivalries, and milestones curated by the league. Query this when answering questions about league history, notable events, or when adding color to an answer.
+  id, season (nullable), category (rule_change/story/rivalry/tradition/milestone/draft_story/other),
+  title, content (full text), tags (comma-separated names/keywords)
+  Example: SELECT * FROM league_lore WHERE tags LIKE '%Falk%' OR content LIKE '%auction%'
+
 **final_standings** — DEFINITIVE post-playoff rank for every owner every season. Use this first for any question about final standings, finishing position, top-N finishes, or end-of-season results. Never recalculate from matchups.
   owner_id, season, final_rank (1=champion 2=runner-up 3=3rd ... 12=last),
   playoff_result ("champion","runner-up","3rd place","missed playoffs" etc.),

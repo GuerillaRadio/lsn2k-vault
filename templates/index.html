@@ -210,7 +210,7 @@
 
       border-left:3px solid var(--crimson);
 
-      color:#d0d0d0;padding:12px 14px;border-radius:4px;
+      color:#e0e0e0;padding:12px 14px;border-radius:4px;
 
       font-size:.88rem;cursor:pointer;
 
@@ -218,7 +218,7 @@
 
     }
 
-    .suggestion:hover{background:#1c1010;border-left-color:var(--crimson-hi);color:#fff;}
+    .suggestion:hover{background:#221010;border-left-color:var(--crimson-hi);color:#fff;}
 
     .suggestion .cat{
 
@@ -607,6 +607,7 @@
     }
     .suggestions-recent{
       display:flex;flex-direction:column;gap:7px;
+      margin-top:14px;
     }
     .suggestion-recent{
       display:flex;align-items:center;justify-content:space-between;
@@ -618,6 +619,11 @@
     .recent-icon{
       color:var(--dim);font-size:.85rem;flex-shrink:0;margin-left:12px;
     }
+
+    .recent-icon-left{
+      color:#aaa;font-size:.85rem;flex-shrink:0;margin-right:10px;
+    }
+    .recent-icon{ display:none; }
   </style>
 
 </head>
@@ -685,16 +691,16 @@
     <div id="suggestions">
       <!-- 2x2 fixed prompts -->
       <div class="suggestions-fixed">
-        <button class="suggestion" onclick="ask('Who has the most championships?')"><span class="cat">Rings</span><span class="label">Who has the most championships?</span><span class="arr">›</span></button>
-        <button class="suggestion" onclick="ask('What is the highest single-game score ever?')"><span class="cat">Record</span><span class="label">Highest single-game score ever?</span><span class="arr">›</span></button>
-        <button class="suggestion" onclick="ask('Who has the best all-time record?')"><span class="cat">Record</span><span class="label">Best all-time records?</span><span class="arr">›</span></button>
-        <button class="suggestion" onclick="ask('Who has the most playoff appearances without a championship?')"><span class="cat">Heartbreak</span><span class="label">Most playoffs, no ring?</span><span class="arr">›</span></button>
+        <button class="suggestion" onclick="ask('Who has the most championships?')"><span class="cat">💍</span><span class="label">Who has the most championships?</span><span class="arr">›</span></button>
+        <button class="suggestion" onclick="ask('What is the highest single-game score ever?')"><span class="cat">📊</span><span class="label">Highest single-game score ever?</span><span class="arr">›</span></button>
+        <button class="suggestion" onclick="ask('Who has the best all-time record?')"><span class="cat">📊</span><span class="label">Best all-time records?</span><span class="arr">›</span></button>
+        <button class="suggestion" onclick="ask('Who has the most playoff appearances without a championship?')"><span class="cat">💔</span><span class="label">Most playoffs, no ring?</span><span class="arr">›</span></button>
       </div>
       <!-- 3 recent queries, full width -->
       <div class="suggestions-recent">
-        <button class="suggestion suggestion-recent" id="recent-0"><span class="cat recent-cat">Recent</span><span class="label recent-label">Loading...</span><span class="recent-icon">⏱</span></button>
-        <button class="suggestion suggestion-recent" id="recent-1"><span class="cat recent-cat">Recent</span><span class="label recent-label">Loading...</span><span class="recent-icon">⏱</span></button>
-        <button class="suggestion suggestion-recent" id="recent-2"><span class="cat recent-cat">Recent</span><span class="label recent-label">Loading...</span><span class="recent-icon">⏱</span></button>
+        <button class="suggestion suggestion-recent" id="recent-0"><span class="recent-icon-left">⏱</span><span class="label recent-label">Loading...</span><span class="arr">›</span></button>
+        <button class="suggestion suggestion-recent" id="recent-1"><span class="recent-icon-left">⏱</span><span class="label recent-label">Loading...</span><span class="arr">›</span></button>
+        <button class="suggestion suggestion-recent" id="recent-2"><span class="recent-icon-left">⏱</span><span class="label recent-label">Loading...</span><span class="arr">›</span></button>
       </div>
     </div>
 
