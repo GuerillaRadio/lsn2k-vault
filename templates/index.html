@@ -1467,7 +1467,9 @@ async function loadRecentQueries() {
     });
   } catch(e) {}
 }
-document.addEventListener('DOMContentLoaded', loadRecentQueries);
+// Call immediately and also ensure it runs after any dynamic rendering
+loadRecentQueries();
+window.addEventListener('load', loadRecentQueries);
 
 </script>
 
