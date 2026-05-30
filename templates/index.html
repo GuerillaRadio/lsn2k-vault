@@ -600,6 +600,8 @@
       #input-row{ flex-wrap:nowrap;align-items:flex-end; }
       #send-btn{ flex-shrink:0;min-width:42px; }
     }
+
+    .recent-cat{ color:var(--muted) !important;display:flex;align-items:center; }
   </style>
 
 </head>
@@ -1438,6 +1440,24 @@ function copyResponse(btn, text) {
     }, 2000);
   });
 }
+
+
+async function loadRecentQueries() {
+  try {
+    const resp = await fetch('/recent');
+    const data = await resp.json();
+    const recents = data.recent || [];
+    recents.forEach((q, i) => {
+      const btn = document.getElementById('recent-' + i);
+      if (btn && q) {
+        btn.querySelector('.recent-label').textContent = q;
+        btn.onclick = () => ask(q);
+        btn.style.display = 'flex';
+      }
+    });
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', loadRecentQueries);
 
 </script>
 

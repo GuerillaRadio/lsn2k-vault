@@ -31,9 +31,19 @@ def handle_chat():
 
     messages = session.get("messages", [])
     messages.append({"role": "user", "content": user_text})
-    # Save user turn immediately so session is consistent
     session["messages"] = messages
     session.modified = True
+
+    # Log to recent queries
+    try:
+        from database import get_conn
+        conn = get_conn()
+        conn.execute("CREATE TABLE IF NOT EXISTS recent_queries (id INTEGER PRIMARY KEY AUTOINCREMENT, question TEXT NOT NULL, asked_at INTEGER DEFAULT (strftime('%s','now')))")
+        conn.execute("INSERT INTO recent_queries (question) VALUES (?)", (user_text,))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
     def generate():
         try:
@@ -51,6 +61,27 @@ def handle_chat():
             "X-Accel-Buffering": "no",
         }
     )
+
+
+@app.route("/recent")
+def recent():
+    from database import get_conn
+    conn = get_conn()
+    try:
+        conn.execute("""CREATE TABLE IF NOT EXISTS recent_queries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question TEXT NOT NULL,
+            asked_at INTEGER DEFAULT (strftime('%s','now'))
+        )""")
+        conn.commit()
+        rows = conn.execute(
+            "SELECT question FROM recent_queries ORDER BY asked_at DESC LIMIT 3"
+        ).fetchall()
+        return jsonify({"recent": [r[0] for r in rows]})
+    except Exception as e:
+        return jsonify({"recent": []})
+    finally:
+        conn.close()
 
 
 @app.route("/save", methods=["POST"])
