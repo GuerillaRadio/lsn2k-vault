@@ -95,23 +95,45 @@ or simply "Garrett went 9-4 in 2019". Use the franchise name to add color, owner
 **weekly_high_scores** — every team's score every week
   id, season, week, owner_id, team_key, score, is_playoffs
 
+**final_standings** — DEFINITIVE post-playoff rank for every owner every season. Use this first for any question about final standings, finishing position, top-N finishes, or end-of-season results. Never recalculate from matchups.
+  owner_id, season, final_rank (1=champion 2=runner-up 3=3rd ... 12=last),
+  playoff_result ("champion","runner-up","3rd place","missed playoffs" etc.),
+  reg_season_rank, reg_wins, reg_losses, reg_points_for, made_playoffs
+
 **championships** — THE ONLY authoritative source for championship winners. Always use this table for any question about who won a title. Never derive champions from standings rank or matchup results.
 
 **CRITICAL DISTINCTION — championship game vs playoffs:**
-- "championship appearances" or "times in the championship game" — MUST use:
-  WHERE m.is_playoffs=1 AND m.is_consolation=0 AND m.week=l.end_week
-  Join leagues l ON m.league_key=l.league_key to get end_week.
-  This gives exactly 1 game per season (the actual championship). For Carson this returns 2 rows (2005, 2014).
-- "playoff appearances" = made_playoffs=1 in owner_season_stats (much larger number, 8-18 typically)
-- "championships won" = count from championships table
-- NEVER query final-week games without is_consolation=0 — consolation games also happen in the final week and will inflate the count massively.
-- NEVER confuse these three things.
 
-**GLOBAL RULE — consolation games:**
-NEVER include consolation games (is_consolation=1) in ANY query by default. This applies to records, points, matchup history, scoring, streaks — everything.
-The ONLY exception is when calculating final season standings/rankings.
-If a user explicitly asks to include consolation games, then and only then add them.
-Every matchup query involving records or game history must include: AND is_consolation=0
+There is EXACTLY ONE championship game per season. The database confirms this.
+There are NO divisions. This is a single 12-team league with one champion per year.
+
+To count championship game appearances for an owner, use this EXACT query pattern:
+```sql
+SELECT COUNT(*) FROM matchups m
+JOIN leagues l ON m.league_key=l.league_key
+JOIN team_owner_map map1 ON m.team1_key=map1.team_key
+JOIN team_owner_map map2 ON m.team2_key=map2.team_key
+WHERE m.is_playoffs=1 AND m.is_consolation=0 AND m.week=l.end_week
+AND (map1.owner_id=? OR map2.owner_id=?)
+```
+is_consolation=0 is MANDATORY — the final week has multiple playoff games, only ONE of which is the championship.
+
+- "championship appearances" = result of query above
+- "playoff appearances" = made_playoffs in owner_season_stats
+- "championships won" = count from championships table
+- NEVER confuse these. NEVER omit is_consolation=0.
+
+**GLOBAL RULE — consolation games (no exceptions without being asked):**
+NEVER include consolation games (is_consolation=1) in ANY query by default.
+This applies to: records, wins, losses, points, matchup history, scoring, streaks, playoff stats — EVERYTHING.
+Only include consolation games if the user EXPLICITLY asks for them.
+Every matchup query must include: AND is_consolation=0
+
+**STANDINGS vs CHAMPION — important distinction:**
+- The `standings` table (rank, wins, losses, points_for) reflects REGULAR SEASON only. rank=1 means best regular season record, NOT champion.
+- The `championships` table is the ONLY source of truth for who won the league each year.
+- Playoff performance (including who won the championship) is NOT reflected in standings.
+- Never use standings rank to determine a champion. Always use the championships table.
   id, season, owner_id, note
 
 **Use these aggregates for any question about records, standings, history, or comparisons.**
