@@ -560,7 +560,7 @@
       #suggestions{
         grid-template-columns:1fr;gap:7px;margin-top:0;
       }
-      #suggestions .suggestion:nth-child(n+3){ display:none; }
+      .suggestions-recent .suggestion-recent:nth-child(n+3){ display:none; }
       .suggestion{ padding:10px 12px;font-size:.82rem; }
       .suggestion .cat{ width:46px;font-size:.58rem; }
 
@@ -670,12 +670,19 @@
 
 
     <div id="suggestions">
-      <button class="suggestion" onclick="ask('Who has the most championships?')"><span class="cat">Rings</span><span class="label">Who has the most championships?</span><span class="arr">›</span></button>
-      <button class="suggestion" id="recent-0" onclick="ask('Worst trade in league history?')"><span class="cat recent-cat">⏱ Recent</span><span class="label recent-label">Worst trade in league history?</span></button>
-      <button class="suggestion" onclick="ask('What is the highest single-game score ever?')"><span class="cat">Record</span><span class="label">Highest single-game score ever?</span><span class="arr">›</span></button>
-      <button class="suggestion" id="recent-1" onclick="ask('Who has the most playoff appearances without a ring?')"><span class="cat recent-cat">⏱ Recent</span><span class="label recent-label">Who has the most playoff appearances without a ring?</span></button>
-      <button class="suggestion" onclick="ask('Who has the best all-time record?')"><span class="cat">Record</span><span class="label">Best all-time records?</span><span class="arr">›</span></button>
-      <button class="suggestion" id="recent-2" onclick="ask('Who drafts the best?')"><span class="cat recent-cat">⏱ Recent</span><span class="label recent-label">Who drafts the best?</span></button>
+      <!-- 2x2 fixed prompts -->
+      <div class="suggestions-fixed">
+        <button class="suggestion" onclick="ask('Who has the most championships?')"><span class="cat">Rings</span><span class="label">Who has the most championships?</span><span class="arr">›</span></button>
+        <button class="suggestion" onclick="ask('What is the highest single-game score ever?')"><span class="cat">Record</span><span class="label">Highest single-game score ever?</span><span class="arr">›</span></button>
+        <button class="suggestion" onclick="ask('Who has the best all-time record?')"><span class="cat">Record</span><span class="label">Best all-time records?</span><span class="arr">›</span></button>
+        <button class="suggestion" onclick="ask('Who has the most playoff appearances without a championship?')"><span class="cat">Heartbreak</span><span class="label">Most playoffs, no ring?</span><span class="arr">›</span></button>
+      </div>
+      <!-- 3 recent queries, full width -->
+      <div class="suggestions-recent">
+        <button class="suggestion suggestion-recent" id="recent-0"><span class="label recent-label">Loading...</span><span class="recent-icon">⏱</span></button>
+        <button class="suggestion suggestion-recent" id="recent-1"><span class="label recent-label">Loading...</span><span class="recent-icon">⏱</span></button>
+        <button class="suggestion suggestion-recent" id="recent-2"><span class="label recent-label">Loading...</span><span class="recent-icon">⏱</span></button>
+      </div>
     </div>
 
   </div>
@@ -1438,7 +1445,11 @@ function copyResponse(btn, text) {
 }
 
 
-const RECENT_DEFAULTS = ["Worst trade in league history?", "Who has the most playoff appearances without a ring?", "Who drafts the best?"];
+const RECENT_DEFAULTS = [
+  "Worst trade in league history?",
+  "Who drafts the best?",
+  "Which manager has never missed the playoffs?"
+];
 
 async function loadRecentQueries() {
   // Set defaults first
