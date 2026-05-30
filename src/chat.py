@@ -2,11 +2,11 @@
 
 import json
 import os
-import sqlite3
 from pathlib import Path
 from dotenv import load_dotenv
 import anthropic
 from config import DB_PATH
+from database import get_conn
 
 load_dotenv(Path(__file__).parent.parent / ".env", override=True)
 
@@ -244,11 +244,11 @@ def run_query(sql: str) -> list[dict]:
     sql = sql.strip()
     if not sql.upper().startswith("SELECT"):
         raise ValueError("Only SELECT queries are allowed.")
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn = get_conn()
     try:
         cur = conn.execute(sql)
-        return [dict(r) for r in cur.fetchall()]
+        rows = cur.fetchall()
+        return [dict(r) for r in rows]
     finally:
         conn.close()
 
