@@ -1,0 +1,5 @@
+content = open('analyze_positions.py', encoding='utf-8').read()
+content = content.replace('WHERE c.season >= 2010\n""").fetchone()\nprint(f"  Top QB scorer won the title', '""").fetchone()\nprint(f"  Top QB scorer won the title')
+content = content.replace("        WHERE c.season >= 2010\n    \"\"\").fetchone()\n    if r['total']:", "    \"\"\").fetchone()\n    if r['total']:")
+open('analyze_positions.py', 'w', encoding='utf-8').write(content)
+print("done")
