@@ -545,8 +545,7 @@
       .coach-face{ width:60px; }
       .coach-copy h2{ font-size:1.1rem; }
       .coach-copy p{ font-size:.8rem;margin-top:5px; }
-
-      .suggestions-fixed{ grid-template-columns:1fr; }
+      .suggestions-fixed{ grid-template-columns:1fr !important; }
       .suggestions-recent .suggestion-recent:nth-child(n+3){ display:none; }
       .suggestion{ padding:10px 12px;font-size:.82rem; }
       .suggestion .cat{
@@ -622,6 +621,10 @@
       color:#bbb;font-size:1.1rem;flex-shrink:0;line-height:1;
     }
     .recent-icon{ display:none; }
+
+    @media(max-width:700px){
+      .suggestions-fixed{ grid-template-columns:1fr !important; }
+    }
   </style>
 
 </head>

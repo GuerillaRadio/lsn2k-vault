@@ -136,6 +136,15 @@ or simply "Garrett went 9-4 in 2019". Use the franchise name to add color, owner
 **weekly_high_scores** — every team's score every week
   id, season, week, owner_id, team_key, score, is_playoffs
 
+**player_season_stats** — PRE-COMPUTED player scoring per season. Use for ANY player point total question.
+  player_key, player_name, position, nfl_team, season, league_key,
+  reg_season_pts (REGULAR SEASON ONLY — default for all player scoring questions),
+  playoff_pts, total_pts, weeks_started, weeks_benched, best_week_pts, best_week, worst_week_pts
+
+  DEFAULT BEHAVIOR: When asked about player points/scoring, ALWAYS use reg_season_pts unless playoffs are explicitly requested.
+  Always note to the user that figures are regular season only.
+  Top QB in 2022: SELECT player_name, reg_season_pts FROM player_season_stats WHERE season=2022 AND position='QB' AND weeks_started>=6 ORDER BY reg_season_pts DESC LIMIT 1
+
 **trade_summary** — PRE-COMPUTED trade analytics. Use this for ANY trade question. One row per trade.
   transaction_key, season, trade_date, trade_week,
   trader_nickname, tradee_nickname,
